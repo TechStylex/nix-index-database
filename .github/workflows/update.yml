@@ -48,13 +48,10 @@ jobs:
     needs: create-release
     strategy:
       matrix:
-        system: ['x86_64-linux', 'aarch64-linux', 'x86_64-darwin', 'aarch64-darwin']
+        system: ['x86_64-linux']
     name: Build database
     outputs:
       x86_64-linux-hash: ${{ steps.hashes.outputs.x86_64-linux }}
-      x86_64-darwin-hash: ${{ steps.hashes.outputs.x86_64-darwin }}
-      aarch64-linux-hash: ${{ steps.hashes.outputs.aarch64-linux }}
-      aarch64-darwin-hash: ${{ steps.hashes.outputs.aarch64-darwin }}
     steps:
     - uses: actions/checkout@v4
     - name: Swap space report before modification
@@ -95,14 +92,18 @@ jobs:
       with:
         name: mic92
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
-    - name: run nix-index
+    - name: update nix-index
       run: |
         nix-channel --add https://mirrors.tuna.tsinghua.edu.cn/nix-channels/nixpkgs-unstable nixpkgs
         nix-channel --update
-        nix shell --inputs-from .# nixpkgs#nix-index -c nix-index --db ./${{ matrix.system }}-index --system ${{matrix.system}} 2>&1 | grep -v '+ generating index:'
-        mv ./${{ matrix.system }}-index/files ./index-${{ matrix.system }}
+    - name: run rippkgs-index
+      run: |
         nix profile install nixpkgs#rippkgs nixpkgs#rippkgs-index
         rippkgs-index nixpkgs -o rippkgs-index.sqlite
+    - name: run nix-index
+      run: |
+        nix shell --inputs-from .# nixpkgs#nix-index -c nix-index --db ./${{ matrix.system }}-index --system ${{matrix.system}} 2>&1 | grep -v '+ generating index:'
+        mv ./${{ matrix.system }}-index/files ./index-${{ matrix.system }}
     - name: hash index
       id: hashes
       run: |
@@ -112,6 +113,11 @@ jobs:
       with:
         tag_name: ${{ needs.create-release.outputs.release_name }}
         files: index-${{ matrix.system }}
+    - name: Add to release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ needs.create-release.outputs.release_name }}
+        files: rippkgs-index.sqlite
 
 
   update-generated:
@@ -132,9 +138,6 @@ jobs:
           url = "https://github.com/${{ github.repository }}/releases/download/${{ needs.create-release.outputs.release_name }}/index-";
           hashes = {
             x86_64-linux = "${{ needs.index.outputs.x86_64-linux-hash }}";
-            aarch64-linux = "${{ needs.index.outputs.aarch64-linux-hash }}";
-            x86_64-darwin = "${{ needs.index.outputs.x86_64-darwin-hash }}";
-            aarch64-darwin = "${{ needs.index.outputs.aarch64-darwin-hash }}";
           };
         }
         EOF
