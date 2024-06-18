@@ -98,7 +98,7 @@ jobs:
         nix-channel --update
     - name: run rippkgs-index
       run: |
-        nix profile install nixpkgs#rippkgs nixpkgs#rippkgs-index
+        nix profile install github:replit/rippkgs/v1.1.0
         rippkgs-index nixpkgs -o rippkgs-index.sqlite
     - name: run nix-index
       run: |
