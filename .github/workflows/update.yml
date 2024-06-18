@@ -99,6 +99,7 @@ jobs:
     - name: run rippkgs-index
       run: |
         nix profile install github:replit/rippkgs/v1.1.0
+        nix-env -iA nixpkgs.rippkgs
         rippkgs-index nixpkgs -o rippkgs-index.sqlite
     - name: run nix-index
       run: |
