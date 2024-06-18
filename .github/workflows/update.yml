@@ -101,6 +101,8 @@ jobs:
         nix-channel --update
         nix shell --inputs-from .# nixpkgs#nix-index -c nix-index --db ./${{ matrix.system }}-index --system ${{matrix.system}} 2>&1 | grep -v '+ generating index:'
         mv ./${{ matrix.system }}-index/files ./index-${{ matrix.system }}
+        nix profile install nixpkgs#rippkgs nixpkgs#rippkgs-index
+        rippkgs-index nixpkgs -o rippkgs-index.sqlite
     - name: hash index
       id: hashes
       run: |
