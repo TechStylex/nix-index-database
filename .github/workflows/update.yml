@@ -97,6 +97,8 @@ jobs:
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
     - name: run nix-index
       run: |
+        nix-channel --add https://mirrors.tuna.tsinghua.edu.cn/nix-channels/nixpkgs-unstable nixpkgs
+        nix-channel --update
         nix shell --inputs-from .# nixpkgs#nix-index -c nix-index --db ./${{ matrix.system }}-index --system ${{matrix.system}} 2>&1 | grep -v '+ generating index:'
         mv ./${{ matrix.system }}-index/files ./index-${{ matrix.system }}
     - name: hash index
