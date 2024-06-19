@@ -1,4 +1,4 @@
-name: "index-generate"
+name: "index-generate-small"
 on:
   workflow_dispatch:
   schedule:
