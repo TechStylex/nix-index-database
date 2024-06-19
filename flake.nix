@@ -10,13 +10,9 @@
 
       testSystems = [
         "x86_64-linux"
-        "aarch64-linux"
       ];
 
-      systems = testSystems ++ [
-        "x86_64-darwin"
-        "aarch64-darwin"
-      ];
+      systems = testSystems;
 
       mkPackages =
         pkgs:
