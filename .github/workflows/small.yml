@@ -92,6 +92,10 @@ jobs:
       with:
         name: mic92
         signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+    - name: add rippkgs-index
+      run: |
+        nix-channel --add https://storage.googleapis.com/replit-nixpkgs/nixpkgs-23.05.tar.gz nixpkgs
+        nix-channel --update
     - name: run rippkgs-index
       run: |
         # nix profile install github:replit/rippkgs/v1.1.0
