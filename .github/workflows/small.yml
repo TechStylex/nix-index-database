@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   schedule:
     # every sunday at 2:51
-    - cron: '51 2 * * 0'
+    - cron: '51 2 * * *'
 jobs:
   update-lock:
     runs-on: ubuntu-latest
