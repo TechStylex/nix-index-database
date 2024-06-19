@@ -102,7 +102,7 @@ jobs:
         nix shell --inputs-from .# nixpkgs#rippkgs -c rippkgs-index nixpkgs -o rippkgs-index.sqlite
     - name: run nix-index
       run: |
-        nix shell --inputs-from .# nixpkgs#nix-index -c nix-index --db ./${{ matrix.system }}-index --system ${{matrix.system}} 2>&1 | grep -v '+ generating index:'
+        nix shell --inputs-from .# nixpkgs#nix-index -c nix-index --db ./${{ matrix.system }}-index --system ${{matrix.system}} --filter-prefix '/bin/' 2>&1 | grep -v '+ generating index:'
         mv ./${{ matrix.system }}-index/files ./index-${{ matrix.system }}
     - name: hash index
       id: hashes
