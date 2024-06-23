@@ -43,7 +43,7 @@ jobs:
         tag_name: ${{ steps.date.outputs.date }}
 
 
-  index:
+  index1:
     runs-on: ubuntu-latest
     needs: create-release
     strategy:
@@ -100,6 +100,65 @@ jobs:
       run: |
         nix profile install github:replit/rippkgs/v1.1.0
         nix shell --inputs-from .# nixpkgs#rippkgs -c rippkgs-index nixpkgs -o rippkgs-index.sqlite
+    - name: Add to release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ needs.create-release.outputs.release_name }}
+        files: rippkgs-index.sqlite
+
+  index2:
+    runs-on: ubuntu-latest
+    needs: create-release
+    strategy:
+      matrix:
+        system: ['x86_64-linux']
+    name: Build database
+    outputs:
+      x86_64-linux-hash: ${{ steps.hashes.outputs.x86_64-linux }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Swap space report before modification
+      shell: bash
+      run: |
+        echo "Memory and swap:"
+        free -h
+        echo
+        swapon --show
+        echo
+    - name: Set Swap
+      shell: bash
+      run: |
+          export SWAP_FILE=$(swapon --show=NAME | tail -n 1)
+          sudo swapoff $SWAP_FILE
+          sudo rm $SWAP_FILE
+          sudo fallocate -l 10G $SWAP_FILE
+          sudo chmod 600 $SWAP_FILE
+          sudo mkswap $SWAP_FILE
+          sudo swapon $SWAP_FILE
+    - name: Swap space report after modification
+      shell: bash
+      run: |
+        echo "Memory and swap:"
+        free -h
+        echo
+        swapon --show
+        echo
+    - uses: cachix/install-nix-action@V27
+      with:
+        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/nixpkgs-unstable.tar.gz
+        extra_nix_config: |
+          access-tokens = github.com=${{ github.token }}
+          system-features = nixos-test benchmark big-parallel kvm
+    # for nix-index
+    - name: Setup cachix
+      uses: cachix/cachix-action@v15
+      with:
+        name: mic92
+        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
+    # - name: update nix-index
+    #   run: |
+    #     nix-channel --add https://mirrors.tuna.tsinghua.edu.cn/nix-channels/nixpkgs-unstable nixpkgs
+    #     nix-channel --update
     - name: run nix-index
       run: |
         nix shell --inputs-from .# nixpkgs#nix-index -c nix-index --db ./${{ matrix.system }}-index --system ${{matrix.system}} --filter-prefix '/bin/' 2>&1 | grep -v '+ generating index:'
@@ -113,14 +172,8 @@ jobs:
       with:
         tag_name: ${{ needs.create-release.outputs.release_name }}
         files: index-${{ matrix.system }}
-    - name: Add to release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ needs.create-release.outputs.release_name }}
-        files: rippkgs-index.sqlite
 
-
-  index_stable:
+  index_stable1:
     runs-on: ubuntu-latest
     needs: create-release
     strategy:
@@ -173,6 +226,62 @@ jobs:
       run: |
         nix profile install github:replit/rippkgs/v1.1.0
         nix shell --inputs-from .# nixpkgs#rippkgs -c rippkgs-index nixpkgs -o rippkgs-index-23.05.sqlite
+    - name: Add to release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ needs.create-release.outputs.release_name }}
+        files: rippkgs-index-23.05.sqlite
+
+
+  index_stable2:
+    runs-on: ubuntu-latest
+    needs: create-release
+    strategy:
+      matrix:
+        system: ['x86_64-linux']
+    name: Build database stable
+    outputs:
+      x86_64-linux-hash: ${{ steps.hashes.outputs.x86_64-linux }}
+    steps:
+    - uses: actions/checkout@v4
+    - name: Swap space report before modification
+      shell: bash
+      run: |
+        echo "Memory and swap:"
+        free -h
+        echo
+        swapon --show
+        echo
+    - name: Set Swap
+      shell: bash
+      run: |
+          export SWAP_FILE=$(swapon --show=NAME | tail -n 1)
+          sudo swapoff $SWAP_FILE
+          sudo rm $SWAP_FILE
+          sudo fallocate -l 10G $SWAP_FILE
+          sudo chmod 600 $SWAP_FILE
+          sudo mkswap $SWAP_FILE
+          sudo swapon $SWAP_FILE
+    - name: Swap space report after modification
+      shell: bash
+      run: |
+        echo "Memory and swap:"
+        free -h
+        echo
+        swapon --show
+        echo
+    - uses: cachix/install-nix-action@V27
+      with:
+        nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/23.05.tar.gz
+        extra_nix_config: |
+          access-tokens = github.com=${{ github.token }}
+          system-features = nixos-test benchmark big-parallel kvm
+    # for nix-index
+    - name: Setup cachix
+      uses: cachix/cachix-action@v15
+      with:
+        name: mic92
+        signingKey: '${{ secrets.CACHIX_SIGNING_KEY }}'
     - name: run nix-index
       run: |
         nix shell --inputs-from .# nixpkgs#nix-index -c nix-index --db ./${{ matrix.system }}-index --system ${{matrix.system}}  --filter-prefix '/bin/' 2>&1 | grep -v '+ generating index:'
@@ -186,16 +295,10 @@ jobs:
       with:
         tag_name: ${{ needs.create-release.outputs.release_name }}
         files: index-${{ matrix.system }}-23.05
-    - name: Add to release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ needs.create-release.outputs.release_name }}
-        files: rippkgs-index-23.05.sqlite
-
 
   update-generated:
     runs-on: ubuntu-latest
-    needs: [ 'create-release', 'index', 'index_stable']
+    needs: [ 'create-release', 'index1', 'index2', 'index_stable1', 'index_stable2']
     steps:
     - uses: actions/checkout@v4
       with:
