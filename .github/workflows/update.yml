@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
   schedule:
     # every sunday at 2:51
-    - cron: '51 2 * * 0'
+    - cron: '51 2 * * *'
 jobs:
   update-lock:
     runs-on: ubuntu-latest
@@ -28,7 +28,7 @@ jobs:
     name: Create Release
     needs: update-lock
     outputs:
-      release_name: ${{ steps.date.outputs.date }}
+      release_name: ${{ steps.date.outputs.date }}-unstable
     steps:
     - name: Get current date
       id: date
@@ -39,7 +39,7 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
-        name: Release ${{ steps.date.outputs.date }}
+        name: Release ${{ steps.date.outputs.date }} unstable
         tag_name: ${{ steps.date.outputs.date }}
 
 
